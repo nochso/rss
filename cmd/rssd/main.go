@@ -17,6 +17,7 @@ import (
 var (
 	httpAddr  = ":8080"
 	httpGrace = time.Second * 10
+	templates map[string]*template.Template
 )
 
 func main() {
@@ -33,17 +34,15 @@ func main() {
 }
 
 func run() error {
-	tmpl, err := parseTemplates()
+	var err error
+	templates, err = parseTemplates()
 	if err != nil {
 		return err
 	}
 	r := chi.NewRouter()
 	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl["index.html"].Execute(w, "")
-		if err != nil {
-			log.WithError(err).Error("rendering template")
-		}
+		render(w, r, "index.html", "")
 	})
 	srv := &http.Server{
 		Addr:    httpAddr,
@@ -72,6 +71,22 @@ func run() error {
 	}
 	<-idleConnsClosed
 	return nil
+}
+
+func render(w http.ResponseWriter, r *http.Request, tmpl string, data interface{}) {
+	t, ok := templates[tmpl]
+	if !ok {
+		log.WithField("template", tmpl).Error("template does not exist")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err := t.Execute(w, data)
+	if err != nil {
+		log.WithField("template", tmpl).WithError(err).Error("rendering template")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 }
 
 // parseTemplates returns a map of parsed templates with template names for keys.
