@@ -33,14 +33,14 @@ func main() {
 }
 
 func run() error {
-	tmpl, err := template.ParseFiles("template/base.html", "template/index.html")
+	tmpl, err := parseTemplates()
 	if err != nil {
 		return err
 	}
 	r := chi.NewRouter()
 	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl.Execute(w, "")
+		err := tmpl["index.html"].Execute(w, "")
 		if err != nil {
 			log.WithError(err).Error("rendering template")
 		}
@@ -72,4 +72,21 @@ func run() error {
 	}
 	<-idleConnsClosed
 	return nil
+}
+
+// parseTemplates returns a map of parsed templates with template names for keys.
+func parseTemplates() (map[string]*template.Template, error) {
+	// template name to required template files
+	paths := map[string][]string{
+		"index.html": {"template/base.html", "template/index.html"},
+	}
+	tmpl := make(map[string]*template.Template, len(paths))
+	var err error
+	for name, files := range paths {
+		tmpl[name], err = template.ParseFiles(files...)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tmpl, nil
 }
