@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
+	"github.com/go-chi/chi"
 )
 
 var (
@@ -31,9 +33,21 @@ func main() {
 }
 
 func run() error {
+	tmpl, err := template.ParseFiles("template/base.html", "template/index.html")
+	if err != nil {
+		return err
+	}
+	r := chi.NewRouter()
+	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		err := tmpl.Execute(w, "")
+		if err != nil {
+			log.WithError(err).Error("rendering template")
+		}
+	})
 	srv := &http.Server{
 		Addr:    httpAddr,
-		Handler: http.NotFoundHandler(),
+		Handler: r,
 	}
 
 	idleConnsClosed := make(chan struct{})
