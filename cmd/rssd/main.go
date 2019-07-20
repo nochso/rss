@@ -15,13 +15,16 @@ import (
 )
 
 var (
+	dbFile    = "rss.sqlite3"
 	httpAddr  = ":8080"
 	httpGrace = time.Second * 10
 	templates map[string]*template.Template
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
 	log.SetHandler(logfmt.Default)
+	flag.StringVar(&dbFile, "db", dbFile, "sqlite3 db file")
 	flag.StringVar(&httpAddr, "http", httpAddr, "HTTP listening address")
 	flag.DurationVar(&httpGrace, "grace", httpGrace, "HTTP shutdown grace period for existing connections")
 	flag.Parse()
@@ -39,6 +42,19 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	db, err := openDB(dbFile)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.WithError(err).Error("closing db")
+			return
+		}
+		log.Info("db closed")
+	}()
+
 	r := chi.NewRouter()
 	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
