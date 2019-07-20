@@ -11,7 +11,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
-	"github.com/go-chi/chi"
 )
 
 var (
@@ -49,14 +48,9 @@ func run() error {
 	}
 	defer closeDB(db)
 
-	r := chi.NewRouter()
-	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, "index.html", "")
-	})
 	srv := &http.Server{
 		Addr:    httpAddr,
-		Handler: r,
+		Handler: newRouter(),
 	}
 
 	idleConnsClosed := make(chan struct{})
