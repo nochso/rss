@@ -32,10 +32,15 @@ CREATE TABLE feed_item (
                          NOT NULL,
     feed_id     INTEGER  REFERENCES feed (id) ON DELETE CASCADE
                          NOT NULL,
+    guid        VARCHAR  NOT NULL,
     title       VARCHAR  NOT NULL,
     link        VARCHAR  NOT NULL,
     published   DATETIME NOT NULL,
-    last_update DATETIME NOT NULL
+    last_update DATETIME NOT NULL,
+    UNIQUE (
+        guid,
+        feed_id
+    )
 );
 
 CREATE TABLE user_feed_item_bookmark (
