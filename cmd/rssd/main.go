@@ -47,13 +47,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.WithError(err).Error("closing db")
-			return
-		}
-		log.Info("db closed")
-	}()
+	defer closeDB(db)
 
 	r := chi.NewRouter()
 	r.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))

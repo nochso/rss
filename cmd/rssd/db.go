@@ -28,3 +28,11 @@ func openDB(fpath string) (*sql.DB, error) {
 	}
 	return db, nil
 }
+
+func closeDB(db *sql.DB) {
+	if err := db.Close(); err != nil {
+		log.WithError(err).Error("closing db")
+		return
+	}
+	log.Info("db closed")
+}
